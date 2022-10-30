@@ -24,6 +24,9 @@ class EventEmitter:
         if len(self._events.get(event_name, [])) == self._max_listeners:
             raise EventEmitterMaxListenerError
 
+    def _get_listeners(self, event_name: str) -> list[Listener]:
+        return self._events.get(event_name, [])
+
     def _once_wrapper(self, event_name: str, listener: Listener) -> Callable[[], Any]:
         @functools.wraps(listener)
         def wrapper(*args, **kwargs):
@@ -73,15 +76,15 @@ class EventEmitter:
         return self
 
     def remove_listener(self, event_name: str, listener: Listener) -> "EventEmitter":
-        if event := self._events.get(event_name):
+        if event := self._get_listeners(event_name):
             if listener in event:
                 self._remove_listener(event_name, listener)
         return self
 
     def remove_all_listeners(self, event_name: str | None = None) -> "EventEmitter":
-        for event in list(self._events):
+        for event in self._events.copy():
             if event_name is None or event_name == event:
-                for listener in list(self._events[event]):
+                for listener in self._events[event].copy():
                     self._remove_listener(event, listener)
                 self._events.pop(event)
         return self
@@ -97,7 +100,7 @@ class EventEmitter:
         return self.remove_listener(event_name, listener)
 
     def emit(self, __event_name: str, *args: Any, **kwargs: Any) -> None:
-        for listener in self._events.get(__event_name, []).copy():
+        for listener in self._get_listeners(__event_name).copy():
             try:
                 listener(*args, **kwargs)
             except Exception as error:
@@ -124,7 +127,7 @@ class EventEmitter:
         ]
 
     def raw_listeners(self, event_name: str) -> list[Listener]:
-        return self._events.get(event_name, [])
+        return self._get_listeners(event_name)
 
     def listener_count(self, event_name: str) -> int:
-        return len(self._events.get(event_name, []))
+        return len(self._get_listeners(event_name))
