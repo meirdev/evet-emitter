@@ -59,6 +59,9 @@ class EventEmitter:
     def _remove_listener(self, event_name: str, listener: Listener) -> None:
         self._events[event_name].remove(listener)
 
+        if len(self._events[event_name]) == 0:
+            self._events.pop(event_name)
+
         self.emit("remove_listener", event_name, listener)
 
     def add_listener(self, event_name: str, listener: Listener) -> "EventEmitter":
@@ -86,7 +89,6 @@ class EventEmitter:
             if event_name is None or event_name == event:
                 for listener in self._events[event].copy():
                     self._remove_listener(event, listener)
-                self._events.pop(event)
         return self
 
     def on(self, event_name: str, listener: Listener) -> "EventEmitter":

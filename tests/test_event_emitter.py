@@ -146,6 +146,8 @@ def test_remove_all_listeners():
 
     assert event_emitter.listener_count("test") == 0
 
+    assert event_emitter.event_names() == []
+
 
 def test_listeners_and_raw_listeners():
     mock = Mock()
