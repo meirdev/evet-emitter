@@ -3,6 +3,9 @@ import functools
 from typing import Any, Callable, DefaultDict
 
 
+ERROR_MONITOR = "error"
+
+
 class EventEmitterMaxListenerError(Exception):
     pass
 
@@ -95,7 +98,13 @@ class EventEmitter:
 
     def emit(self, __event_name: str, *args: Any, **kwargs: Any) -> None:
         for listener in self._events.get(__event_name, []).copy():
-            listener(*args, **kwargs)
+            try:
+                listener(*args, **kwargs)
+            except Exception as error:
+                if self.listeners(ERROR_MONITOR):
+                    self.emit(ERROR_MONITOR, error)
+                else:
+                    raise
 
     def event_names(self) -> list[str]:
         return list(self._events)

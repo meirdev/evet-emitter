@@ -1,1 +1,1 @@
-from .event_emitter import EventEmitter, EventEmitterMaxListenerError
+from .event_emitter import ERROR_MONITOR, EventEmitter, EventEmitterMaxListenerError

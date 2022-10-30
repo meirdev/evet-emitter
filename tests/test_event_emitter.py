@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from event_emitter import EventEmitter, EventEmitterMaxListenerError
+from event_emitter import ERROR_MONITOR, EventEmitter, EventEmitterMaxListenerError
 
 
 def test_add_listener():
@@ -159,7 +159,9 @@ def test_listeners_and_raw_listeners():
     assert len(event_emitter.raw_listeners("test")) == 2
 
     assert getattr(event_emitter.raw_listeners("test")[0], "__once_wrapper__", False)
-    assert not getattr(event_emitter.raw_listeners("test")[1], "__once_wrapper__", False)
+    assert not getattr(
+        event_emitter.raw_listeners("test")[1], "__once_wrapper__", False
+    )
 
 
 def test_off():
@@ -178,3 +180,29 @@ def test_off():
     event_emitter.emit("test")
 
     assert mock.call_count == 3
+
+
+def test_error_monitor():
+    mock = Mock()
+    mock_error = Mock()
+
+    mock.side_effect = lambda: 1 / 0
+
+    event_emitter = EventEmitter()
+    event_emitter.on("test", mock)
+    event_emitter.on(ERROR_MONITOR, mock_error)
+
+    event_emitter.emit("test")
+
+    assert type(mock_error.call_args[0][0]) is ZeroDivisionError
+
+
+def test_error_uncaught():
+    mock = Mock()
+    mock.side_effect = lambda: 1 / 0
+
+    event_emitter = EventEmitter()
+    event_emitter.on("test", mock)
+
+    with pytest.raises(ZeroDivisionError):
+        event_emitter.emit("test")
