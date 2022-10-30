@@ -21,7 +21,7 @@ class EventEmitter:
         self._events: DefaultDict[str, list[Listener]] = collections.defaultdict(list)
 
     def _check_max_listeners(self, event_name: str) -> None:
-        if len(self._events.get(event_name, [])) == self._max_listeners:
+        if len(self._get_listeners(event_name)) == self._max_listeners:
             raise EventEmitterMaxListenerError
 
     def _get_listeners(self, event_name: str) -> list[Listener]:
