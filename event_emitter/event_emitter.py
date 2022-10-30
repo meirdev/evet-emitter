@@ -11,7 +11,9 @@ Listener = Callable[..., Any]
 
 
 class EventEmitter:
-    def __init__(self, max_listener: int = 10) -> None:
+    DEFAULT_MAX_LISTENERS = 10
+
+    def __init__(self, max_listener: int = DEFAULT_MAX_LISTENERS) -> None:
         self._max_listeners = max_listener
         self._events: DefaultDict[str, list[Listener]] = collections.defaultdict(list)
 
