@@ -90,6 +90,12 @@ def test_remove_listener():
     assert mock.call_count == 3
 
 
+def test_remove_listener_not_exist():
+    event_emitter = EventEmitter()
+
+    event_emitter.remove_listener("test", Mock())
+
+
 def test_event_names():
     mock = Mock()
 
@@ -145,6 +151,15 @@ def test_remove_all_listeners():
     event_emitter.remove_all_listeners("test")
 
     assert event_emitter.listener_count("test") == 0
+
+    assert event_emitter.event_names() == []
+
+    mock = Mock()
+
+    event_emitter.on("test1", mock)
+    event_emitter.on("test2", mock)
+
+    event_emitter.remove_all_listeners()
 
     assert event_emitter.event_names() == []
 

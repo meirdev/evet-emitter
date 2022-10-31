@@ -20,10 +20,6 @@ class EventEmitter:
         self._max_listeners = max_listener
         self._events: DefaultDict[str, list[Listener]] = collections.defaultdict(list)
 
-    def _check_max_listeners(self, event_name: str) -> None:
-        if len(self._get_listeners(event_name)) == self._max_listeners:
-            raise EventEmitterMaxListenerError
-
     def _get_listeners(self, event_name: str) -> list[Listener]:
         return self._events.get(event_name, [])
 
@@ -44,7 +40,8 @@ class EventEmitter:
         index: int | None = None,
         once: bool = False,
     ) -> None:
-        self._check_max_listeners(event_name)
+        if len(self._get_listeners(event_name)) == self._max_listeners:
+            raise EventEmitterMaxListenerError
 
         if once:
             listener = self._once_wrapper(event_name, listener)
@@ -57,9 +54,12 @@ class EventEmitter:
             self._events[event_name].append(listener)
 
     def _remove_listener(self, event_name: str, listener: Listener) -> None:
+        if listener not in self._get_listeners(event_name):
+            return
+
         self._events[event_name].remove(listener)
 
-        if len(self._events[event_name]) == 0:
+        if len(self._get_listeners(event_name)) == 0:
             self._events.pop(event_name)
 
         self.emit("remove_listener", event_name, listener)
@@ -69,26 +69,27 @@ class EventEmitter:
         return self
 
     def prepend_listener(self, event_name: str, listener: Listener) -> "EventEmitter":
-        self._insert_listener(event_name, listener, 0)
+        self._insert_listener(event_name, listener, index=0)
         return self
 
     def prepend_once_listener(
         self, event_name: str, listener: Listener
     ) -> "EventEmitter":
-        self._insert_listener(event_name, listener, 0, once=True)
+        self._insert_listener(event_name, listener, index=0, once=True)
         return self
 
     def remove_listener(self, event_name: str, listener: Listener) -> "EventEmitter":
-        if event := self._get_listeners(event_name):
-            if listener in event:
-                self._remove_listener(event_name, listener)
+        self._remove_listener(event_name, listener)
         return self
 
     def remove_all_listeners(self, event_name: str | None = None) -> "EventEmitter":
-        for event in self._events.copy():
-            if event_name is None or event_name == event:
-                for listener in self._events[event].copy():
-                    self._remove_listener(event, listener)
+        if event_name is None:
+            events = self._events
+        else:
+            events = {event_name: self._get_listeners(event_name)}
+        for event in events.copy():
+            for listener in events[event].copy():
+                self._remove_listener(event, listener)
         return self
 
     def on(self, event_name: str, listener: Listener) -> "EventEmitter":
@@ -125,7 +126,7 @@ class EventEmitter:
         # __wrapped__ added by functools.wraps
         return [
             getattr(func, "__wrapped__", func)
-            for func in self.raw_listeners(event_name)
+            for func in self._get_listeners(event_name)
         ]
 
     def raw_listeners(self, event_name: str) -> list[Listener]:
